@@ -1,0 +1,3 @@
+cd C:\Users\29Tha\OneDrive\Desktop\saas-financeiro\backend
+venv\Scripts\activate
+python run.py

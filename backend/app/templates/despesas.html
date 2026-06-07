@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% block title %}Despesas - FinanceApp{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Despesas</h4>
+    <div class="d-flex gap-2">
+        <input type="month" id="filtro-mes" class="form-control" style="width:160px" value="2026-06">
+        <button class="btn btn-outline-secondary" onclick="loadAll()"><i class="bi bi-arrow-clockwise"></i></button>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="tabs">
+    <li class="nav-item">
+        <a class="nav-link active" href="#" onclick="switchTab('fixas', this)">
+            <i class="bi bi-house me-1"></i>Despesas Fixas
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#" onclick="switchTab('cartao', this)">
+            <i class="bi bi-credit-card me-1"></i>Fatura do Cartão
+        </a>
+    </li>
+</ul>
+
+<!-- ABA FIXAS -->
+<div id="tab-fixas">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="text-muted small" id="resumo-fixas"></div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" onclick="copiarMesAnterior()">
+                <i class="bi bi-copy me-1"></i>Copiar mês anterior
+            </button>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalFixa" onclick="abrirModalNovaFixa()">
+                <i class="bi bi-plus-lg me-1"></i>Nova Despesa Fixa
+            </button>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Descrição</th>
+                        <th>Valor</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-fixas"></tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <td class="text-end fw-bold">Total:</td>
+                        <td class="fw-bold text-danger" id="total-fixas"></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ABA CARTAO -->
+<div id="tab-cartao" style="display:none">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-danger d-none" id="btn-deletar-selecionados" onclick="deletarSelecionados()">
+                <i class="bi bi-trash me-1"></i>Deletar Selecionados
+            </button>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalUpload">
+                <i class="bi bi-upload me-1"></i>Importar CSV/PDF
+            </button>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalDespesa">
+                <i class="bi bi-plus-lg me-1"></i>Nova Despesa
+            </button>
+        </div>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+        <div class="text-muted small" id="resumo-selecao">Nenhum item selecionado</div>
+        <div class="fw-bold text-danger" id="total-listado"></div>
+    </div>
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th width="40"><input type="checkbox" id="check-all" onclick="toggleAll(this)"></th>
+                        <th>Descrição</th>
+                        <th>Categoria</th>
+                        <th>Data</th>
+                        <th>Valor</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-despesas"></tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="4" class="text-end fw-bold">Total:</td>
+                        <td class="fw-bold text-danger" id="total-footer"></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Despesa Fixa -->
+<div class="modal fade" id="modalFixa" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="titulo-modal-fixa">Nova Despesa Fixa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="fixa-id">
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <input type="text" id="fixa-nome" class="form-control" placeholder="Ex: Cemig, Aluguel...">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Valor</label>
+                    <input type="number" id="fixa-valor" class="form-control" step="0.01" placeholder="0,00">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarFixa()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nova Despesa Cartão -->
+<div class="modal fade" id="modalDespesa" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nova Despesa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <input type="text" id="desp-desc" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Valor</label>
+                    <input type="number" id="desp-valor" class="form-control" step="0.01">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Categoria</label>
+                    <input type="text" id="desp-cat" class="form-control" placeholder="Alimentacao, Transporte...">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Data</label>
+                    <input type="date" id="desp-data" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="criarDespesa()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Upload -->
+<div class="modal fade" id="modalUpload" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Importar CSV/PDF</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">CSV: colunas <code>date, description, amount, category</code><br>PDF: fatura Bradesco</p>
+                <div class="mb-3">
+                    <label class="form-label">Arquivo</label>
+                    <input type="file" id="upload-file" class="form-control" accept=".csv,.pdf">
+                </div>
+                <div id="upload-result"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="uploadArquivo()">Importar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let despesasAtuais = [];
+let tabAtiva = 'fixas';
+
+function getMesAno() {
+    const val = document.getElementById('filtro-mes').value;
+    const [year, month] = val.split('-');
+    return { month: parseInt(month), year: parseInt(year) };
+}
+
+function switchTab(tab, el) {
+    event.preventDefault();
+    tabAtiva = tab;
+    document.getElementById('tab-fixas').style.display = tab === 'fixas' ? 'block' : 'none';
+    document.getElementById('tab-cartao').style.display = tab === 'cartao' ? 'block' : 'none';
+    document.querySelectorAll('#tabs .nav-link').forEach(l => l.classList.remove('active'));
+    el.classList.add('active');
+}
+
+function loadAll() {
+    loadFixas();
+    loadDespesas();
+}
+
+// ========== FIXAS ==========
+async function loadFixas() {
+    const { month, year } = getMesAno();
+    const res = await fetch(`/fixed/?month=${month}&year=${year}`);
+    const data = await res.json();
+    const items = data.items;
+    const total = data.total;
+
+    document.getElementById('resumo-fixas').textContent = `${items.length} item(s) — Total: R$ ${total.toFixed(2)}`;
+    document.getElementById('total-fixas').textContent = `R$ ${total.toFixed(2)}`;
+
+    document.getElementById('tabela-fixas').innerHTML = items.length ? items.map(i => `
+        <tr>
+            <td>${i.name}</td>
+            <td class="text-danger fw-bold">R$ ${i.amount.toFixed(2)}</td>
+            <td>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalEditarFixa(${i.id}, '${i.name}', ${i.amount})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deletarFixa(${i.id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('') : '<tr><td colspan="3" class="text-center text-muted py-3">Nenhuma despesa fixa. Adicione ou copie do mês anterior.</td></tr>';
+}
+
+function abrirModalNovaFixa() {
+    document.getElementById('titulo-modal-fixa').textContent = 'Nova Despesa Fixa';
+    document.getElementById('fixa-id').value = '';
+    document.getElementById('fixa-nome').value = '';
+    document.getElementById('fixa-valor').value = '';
+}
+
+function abrirModalEditarFixa(id, nome, valor) {
+    document.getElementById('titulo-modal-fixa').textContent = 'Editar Despesa Fixa';
+    document.getElementById('fixa-id').value = id;
+    document.getElementById('fixa-nome').value = nome;
+    document.getElementById('fixa-valor').value = valor;
+    new bootstrap.Modal(document.getElementById('modalFixa')).show();
+}
+
+async function salvarFixa() {
+    const id = document.getElementById('fixa-id').value;
+    const { month, year } = getMesAno();
+    const body = {
+        name: document.getElementById('fixa-nome').value,
+        amount: parseFloat(document.getElementById('fixa-valor').value),
+        month, year
+    };
+    const url = id ? `/fixed/${id}` : '/fixed/';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+    if (res.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('modalFixa')).hide();
+        loadFixas();
+    }
+}
+
+async function deletarFixa(id) {
+    if (!confirm('Deletar esta despesa fixa?')) return;
+    await fetch(`/fixed/${id}`, { method: 'DELETE' });
+    loadFixas();
+}
+
+async function copiarMesAnterior() {
+    const { month, year } = getMesAno();
+    const res = await fetch('/fixed/copy', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ month, year })
+    });
+    const data = await res.json();
+    alert(data.message || data.error);
+    if (res.ok) loadFixas();
+}
+
+// ========== CARTAO ==========
+async function loadDespesas() {
+    const mes = document.getElementById('filtro-mes').value;
+    const [year, month] = mes.split('-');
+    const lastDay = new Date(year, month, 0).getDate();
+    const url = `/expenses/?start_date=${year}-${month}-01&end_date=${year}-${month}-${lastDay}`;
+    const res = await fetch(url);
+    despesasAtuais = await res.json();
+
+    const total = despesasAtuais.reduce((s, d) => s + d.amount, 0);
+    document.getElementById('total-footer').textContent = `R$ ${total.toFixed(2)}`;
+    document.getElementById('total-listado').textContent = `Total: R$ ${total.toFixed(2)} (${despesasAtuais.length} despesas)`;
+
+    const rows = despesasAtuais.map(d => `
+        <tr id="row-${d.id}">
+            <td><input type="checkbox" class="check-item" value="${d.id}" onchange="atualizarSelecao()"></td>
+            <td>${d.description}</td>
+            <td><span class="badge bg-light text-dark">${d.category}</span></td>
+            <td>${d.date}</td>
+            <td class="text-danger fw-bold">R$ ${d.amount.toFixed(2)}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="deletarDespesa(${d.id})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('') || '<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma despesa encontrada.</td></tr>';
+
+    document.getElementById('tabela-despesas').innerHTML = rows;
+    document.getElementById('check-all').checked = false;
+    atualizarSelecao();
+}
+
+function toggleAll(checkbox) {
+    document.querySelectorAll('.check-item').forEach(c => c.checked = checkbox.checked);
+    atualizarSelecao();
+}
+
+function atualizarSelecao() {
+    const selecionados = document.querySelectorAll('.check-item:checked');
+    const btn = document.getElementById('btn-deletar-selecionados');
+    const resumo = document.getElementById('resumo-selecao');
+    if (selecionados.length > 0) {
+        btn.classList.remove('d-none');
+        const totalSel = [...selecionados].reduce((s, c) => {
+            const d = despesasAtuais.find(d => d.id == c.value);
+            return s + (d ? d.amount : 0);
+        }, 0);
+        resumo.textContent = `${selecionados.length} item(s) selecionado(s) — R$ ${totalSel.toFixed(2)}`;
+    } else {
+        btn.classList.add('d-none');
+        resumo.textContent = 'Nenhum item selecionado';
+    }
+}
+
+async function deletarSelecionados() {
+    const selecionados = [...document.querySelectorAll('.check-item:checked')].map(c => c.value);
+    if (!confirm(`Deletar ${selecionados.length} despesa(s)?`)) return;
+    await Promise.all(selecionados.map(id => fetch(`/expenses/${id}`, { method: 'DELETE' })));
+    loadDespesas();
+}
+
+async function criarDespesa() {
+    const mes = document.getElementById('filtro-mes').value;
+    const [year, month] = mes.split('-');
+    const res = await fetch('/expenses/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            description: document.getElementById('desp-desc').value,
+            amount: parseFloat(document.getElementById('desp-valor').value),
+            category: document.getElementById('desp-cat').value || 'Outros',
+            date: document.getElementById('desp-data').value || `${year}-${month}-01`
+        })
+    });
+    if (res.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('modalDespesa')).hide();
+        loadDespesas();
+    }
+}
+
+async function deletarDespesa(id) {
+    if (!confirm('Deletar esta despesa?')) return;
+    await fetch(`/expenses/${id}`, { method: 'DELETE' });
+    loadDespesas();
+}
+
+async function uploadArquivo() {
+    const file = document.getElementById('upload-file').files[0];
+    if (!file) return alert('Selecione um arquivo!');
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/uploads/csv/', { method: 'POST', body: formData });
+    const data = await res.json();
+    document.getElementById('upload-result').innerHTML = res.ok
+        ? `<div class="alert alert-success">${data.message}</div>`
+        : `<div class="alert alert-danger">${data.error}</div>`;
+    if (res.ok) loadDespesas();
+}
+
+document.getElementById('filtro-mes').addEventListener('change', loadAll);
+loadAll();
+</script>
+{% endblock %}

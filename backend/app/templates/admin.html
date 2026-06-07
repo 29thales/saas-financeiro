@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Administração - FinanceApp{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Administração de Usuários</h4>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+        <i class="bi bi-person-plus me-1"></i>Novo Usuário
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Usuário</th>
+                    <th>Email</th>
+                    <th>Perfil</th>
+                    <th>Criado em</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="tabela-usuarios"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Novo Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-alert" class="alert alert-danger d-none"></div>
+                <div class="mb-3">
+                    <label class="form-label">Usuário</label>
+                    <input type="text" id="user-username" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="user-email" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Senha</label>
+                    <input type="password" id="user-password" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Perfil</label>
+                    <select id="user-role" class="form-select">
+                        <option value="user">Usuário Comum</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="criarUsuario()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalSenha" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Resetar Senha</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="senha-user-id">
+                <div class="mb-3">
+                    <label class="form-label">Nova Senha</label>
+                    <input type="password" id="nova-senha" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-warning" onclick="resetarSenha()">Resetar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadUsuarios() {
+    const res = await fetch('/api/admin/users');
+    const users = await res.json();
+    const roleLabel = {
+        admin: '<span class="badge bg-danger">Admin</span>',
+        user: '<span class="badge bg-secondary">Usuário</span>'
+    };
+    document.getElementById('tabela-usuarios').innerHTML = users.map(u => `
+        <tr>
+            <td>${u.id}</td>
+            <td><i class="bi bi-person-circle me-1"></i>${u.username}</td>
+            <td>${u.email}</td>
+            <td>${roleLabel[u.role]}</td>
+            <td>${u.created_at}</td>
+            <td class="d-flex gap-1">
+                <button class="btn btn-sm btn-outline-warning" onclick="abrirResetSenha(${u.id})">
+                    <i class="bi bi-key"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deletarUsuario(${u.id})" ${u.role === 'admin' ? 'disabled' : ''}>
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function criarUsuario() {
+    const alertEl = document.getElementById('modal-alert');
+    const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            username: document.getElementById('user-username').value,
+            email: document.getElementById('user-email').value,
+            password: document.getElementById('user-password').value,
+            role: document.getElementById('user-role').value
+        })
+    });
+    const data = await res.json();
+    if (res.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
+        loadUsuarios();
+    } else {
+        alertEl.textContent = data.error;
+        alertEl.classList.remove('d-none');
+    }
+}
+
+function abrirResetSenha(userId) {
+    document.getElementById('senha-user-id').value = userId;
+    new bootstrap.Modal(document.getElementById('modalSenha')).show();
+}
+
+async function resetarSenha() {
+    const userId = document.getElementById('senha-user-id').value;
+    const senha = document.getElementById('nova-senha').value;
+    const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ password: senha })
+    });
+    if (res.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('modalSenha')).hide();
+        alert('Senha resetada com sucesso!');
+    }
+}
+
+async function deletarUsuario(id) {
+    if (!confirm('Deletar este usuário?')) return;
+    const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+    if (res.ok) loadUsuarios();
+}
+
+loadUsuarios();
+</script>
+{% endblock %}

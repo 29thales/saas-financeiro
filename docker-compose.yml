@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: saas_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: saas_financeiro
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
+  web:
+    build: ./backend
+    container_name: saas_web
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres123@db:5432/saas_financeiro
+      SECRET_KEY: chave-secreta-producao-123
+      FLASK_ENV: production
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    restart: always
+
+volumes:
+  postgres_data:

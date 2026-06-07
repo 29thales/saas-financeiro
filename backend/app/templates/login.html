@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Login - FinanceApp{% endblock %}
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
+    <div class="card p-4" style="width: 380px;">
+        <div class="text-center mb-4">
+            <i class="bi bi-wallet2 text-primary" style="font-size: 3rem;"></i>
+            <h3 class="mt-2 fw-bold">FinanceApp</h3>
+            <p class="text-muted">Controle suas finanças</p>
+        </div>
+        <div id="alert" class="alert alert-danger d-none"></div>
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" id="email" class="form-control" placeholder="seu@email.com">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Senha</label>
+            <input type="password" id="password" class="form-control" placeholder="••••••">
+        </div>
+        <button onclick="doLogin()" class="btn btn-primary w-100 py-2">Entrar</button>
+    </div>
+</div>
+<script>
+async function doLogin() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const res = await fetch('/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email, password})
+    });
+    const data = await res.json();
+    if (res.ok) {
+        window.location.href = '/dashboard';
+    } else {
+        const alert = document.getElementById('alert');
+        alert.textContent = data.error;
+        alert.classList.remove('d-none');
+    }
+}
+document.addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+{% endblock %}

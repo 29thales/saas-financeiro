@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}Balanço - FinanceApp{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Balanço Mensal</h4>
+    <input type="month" id="filtro-mes" class="form-control" style="width:160px" value="2026-06">
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card blue p-3">
+            <div class="text-muted small">Fixas (Thales)</div>
+            <div class="fs-5 fw-bold text-primary" id="total-fixas">R$ --</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card red p-3">
+            <div class="text-muted small">Cartão Bruto (Camila)</div>
+            <div class="fs-5 fw-bold text-danger" id="total-cartao">R$ --</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card yellow p-3">
+            <div class="text-muted small">Total Geral</div>
+            <div class="fs-5 fw-bold text-warning" id="total-geral">R$ --</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card green p-3">
+            <div class="text-muted small">Cada um paga</div>
+            <div class="fs-5 fw-bold text-success" id="cada-um">R$ --</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-person me-2"></i>Thales paga</h6>
+            <div id="lista-fixas"></div>
+            <div class="d-flex justify-content-between pt-3 border-top mt-2">
+                <span class="fw-bold">Total</span>
+                <span class="fw-bold text-primary" id="total-fixas-2">R$ --</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-person me-2"></i>Camila paga</h6>
+            <div class="d-flex justify-content-between py-2 border-bottom">
+                <span>Fatura do Cartão</span>
+                <span class="text-danger fw-bold" id="total-cartao-2">R$ --</span>
+            </div>
+            <div class="d-flex justify-content-between py-2 border-bottom text-success">
+                <span>(-) Descontos</span>
+                <span class="fw-bold" id="total-descontos">R$ 0,00</span>
+            </div>
+            <div class="d-flex justify-content-between pt-3 border-top mt-2">
+                <span class="fw-bold">Total líquido</span>
+                <span class="fw-bold text-danger" id="card-liquido">R$ --</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-scissors me-2"></i>Descontos do Cartão</h6>
+            <div class="d-flex gap-2 mb-3">
+                <input type="text" id="desc-nome" class="form-control form-control-sm" placeholder="Nome da pessoa">
+                <input type="number" id="desc-valor" class="form-control form-control-sm" placeholder="Valor" step="0.01" style="width:100px">
+                <button class="btn btn-sm btn-primary" onclick="adicionarDesconto()">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+            <div id="lista-descontos"></div>
+            <div class="d-flex justify-content-between pt-2 border-top mt-2">
+                <span class="fw-bold text-success small">Total descontos</span>
+                <span class="fw-bold text-success" id="total-descontos-2">R$ 0,00</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="resultado-box" class="card p-4 text-center mb-4" style="border-width: 2px;">
+    <div class="text-muted mb-1" id="resultado-label">Calculando...</div>
+    <div class="fs-2 fw-bold" id="resultado-valor">--</div>
+    <div class="text-muted small mt-2" id="resultado-calculo"></div>
+</div>
+
+<script>
+function getMesAno() {
+    const val = document.getElementById('filtro-mes').value;
+    const [year, month] = val.split('-');
+    return { month: parseInt(month), year: parseInt(year) };
+}
+
+async function loadBalanco() {
+    const { month, year } = getMesAno();
+
+    const res = await fetch(`/balance/?month=${month}&year=${year}`);
+    const data = await res.json();
+
+    document.getElementById('total-fixas').textContent = `R$ ${data.total_fixed.toFixed(2)}`;
+    document.getElementById('total-fixas-2').textContent = `R$ ${data.total_fixed.toFixed(2)}`;
+    document.getElementById('total-cartao').textContent = `R$ ${data.total_card.toFixed(2)}`;
+    document.getElementById('total-cartao-2').textContent = `R$ ${data.total_card.toFixed(2)}`;
+    document.getElementById('total-descontos').textContent = `R$ ${data.total_discounts.toFixed(2)}`;
+    document.getElementById('card-liquido').textContent = `R$ ${data.card_liquido.toFixed(2)}`;
+    document.getElementById('total-geral').textContent = `R$ ${data.total_geral.toFixed(2)}`;
+    document.getElementById('cada-um').textContent = `R$ ${data.cada_um_paga.toFixed(2)}`;
+
+    const fixRes = await fetch(`/fixed/?month=${month}&year=${year}`);
+    const fixData = await fixRes.json();
+    document.getElementById('lista-fixas').innerHTML = fixData.items.map(i => `
+        <div class="d-flex justify-content-between py-2 border-bottom">
+            <span class="small">${i.name}</span>
+            <span class="text-primary fw-bold small">R$ ${i.amount.toFixed(2)}</span>
+        </div>
+    `).join('') || '<p class="text-muted small">Nenhuma despesa fixa.</p>';
+
+    await loadDescontos();
+
+    const box = document.getElementById('resultado-box');
+    const label = document.getElementById('resultado-label');
+    const valor = document.getElementById('resultado-valor');
+    const calculo = document.getElementById('resultado-calculo');
+
+    if (data.result.who === 'thales') {
+        box.style.borderColor = '#dc3545';
+        label.textContent = 'Thales deve para Camila';
+        valor.textContent = `R$ ${data.result.amount.toFixed(2)}`;
+        valor.className = 'fs-2 fw-bold text-danger';
+        calculo.textContent = `Total geral R$${data.total_geral.toFixed(2)} / 2 = R$${data.cada_um_paga.toFixed(2)} cada. Thales pagou R$${data.total_fixed.toFixed(2)}, falta R$${data.result.amount.toFixed(2)}`;
+    } else if (data.result.who === 'camila') {
+        box.style.borderColor = '#28a745';
+        label.textContent = 'Camila deve para Thales';
+        valor.textContent = `R$ ${data.result.amount.toFixed(2)}`;
+        valor.className = 'fs-2 fw-bold text-success';
+        calculo.textContent = `Total geral R$${data.total_geral.toFixed(2)} / 2 = R$${data.cada_um_paga.toFixed(2)} cada. Camila pagou R$${data.card_liquido.toFixed(2)}, falta R$${data.result.amount.toFixed(2)}`;
+    } else {
+        box.style.borderColor = '#6c757d';
+        label.textContent = 'Estao quites!';
+        valor.textContent = 'R$ 0,00';
+        valor.className = 'fs-2 fw-bold text-muted';
+        calculo.textContent = 'Valores iguais este mes';
+    }
+}
+
+async function loadDescontos() {
+    const { month, year } = getMesAno();
+    const res = await fetch(`/discounts/?month=${month}&year=${year}`);
+    const data = await res.json();
+
+    document.getElementById('total-descontos-2').textContent = `R$ ${data.total.toFixed(2)}`;
+
+    const porPessoa = {};
+    const idsPorPessoa = {};
+    data.items.forEach(i => {
+        const nome = i.name.trim();
+        porPessoa[nome] = (porPessoa[nome] || 0) + i.amount;
+        if (!idsPorPessoa[nome]) idsPorPessoa[nome] = [];
+        idsPorPessoa[nome].push(i.id);
+    });
+
+    document.getElementById('lista-descontos').innerHTML = Object.keys(porPessoa).length ?
+        Object.entries(porPessoa).map(([nome, total]) => {
+            const key = btoa(unescape(encodeURIComponent(nome)));
+            const idsJson = JSON.stringify(idsPorPessoa[nome]);
+            return `
+            <div class="border-bottom py-1">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small fw-bold">${nome}</span>
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="text-success fw-bold small">R$ ${total.toFixed(2)}</span>
+                        <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="abrirEdicaoDesconto('${key}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deletarDescontosPessoa(${idsJson})">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="edit-${key}" style="display:none" class="mt-2">
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control form-control-sm" id="edit-nome-${key}" value="${nome}">
+                        <input type="number" class="form-control form-control-sm" id="edit-valor-${key}" value="${total.toFixed(2)}" step="0.01" style="width:90px">
+                        <button class="btn btn-sm btn-success" onclick="salvarEdicaoDesconto('${key}', ${idsJson})">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="fecharEdicaoDesconto('${key}')">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        }).join('')
+        : '<p class="text-muted small">Nenhum desconto cadastrado.</p>';
+}
+
+function abrirEdicaoDesconto(key) {
+    document.getElementById(`edit-${key}`).style.display = 'block';
+}
+
+function fecharEdicaoDesconto(key) {
+    document.getElementById(`edit-${key}`).style.display = 'none';
+}
+
+async function salvarEdicaoDesconto(key, ids) {
+    const novoNome = document.getElementById(`edit-nome-${key}`).value.trim();
+    const novoValor = parseFloat(document.getElementById(`edit-valor-${key}`).value);
+    const { month, year } = getMesAno();
+    if (!novoNome || !novoValor) return alert('Informe nome e valor!');
+    await Promise.all(ids.map(id => fetch(`/discounts/${id}`, { method: 'DELETE' })));
+    await fetch('/discounts/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name: novoNome, amount: novoValor, month, year })
+    });
+    loadBalanco();
+}
+
+async function adicionarDesconto() {
+    const nome = document.getElementById('desc-nome').value.trim();
+    const valor = parseFloat(document.getElementById('desc-valor').value);
+    const { month, year } = getMesAno();
+    if (!nome || !valor) return alert('Informe nome e valor!');
+    const res = await fetch('/discounts/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name: nome, amount: valor, month, year })
+    });
+    if (res.ok) {
+        document.getElementById('desc-nome').value = '';
+        document.getElementById('desc-valor').value = '';
+        loadBalanco();
+    }
+}
+
+async function deletarDescontosPessoa(ids) {
+    if (!confirm('Deletar todos os descontos desta pessoa?')) return;
+    await Promise.all(ids.map(id => fetch(`/discounts/${id}`, { method: 'DELETE' })));
+    loadBalanco();
+}
+
+document.getElementById('filtro-mes').addEventListener('change', loadBalanco);
+loadBalanco();
+</script>
+{% endblock %}

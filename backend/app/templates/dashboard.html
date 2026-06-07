@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - FinanceApp{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Dashboard</h4>
+        <small class="text-muted">Bem-vindo, {{ current_user.username }}!</small>
+    </div>
+    <span class="badge bg-primary" id="mes-label">--</span>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card blue p-3">
+            <div class="text-muted small">Fixas (Thales)</div>
+            <div class="fs-5 fw-bold text-primary" id="total-fixas">R$ --</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card red p-3">
+            <div class="text-muted small">Cartão (Camila)</div>
+            <div class="fs-5 fw-bold text-danger" id="total-cartao">R$ --</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card yellow p-3">
+            <div class="text-muted small">Total Geral</div>
+            <div class="fs-5 fw-bold text-warning" id="total-geral">R$ --</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card green p-3">
+            <div class="text-muted small">Cada um paga</div>
+            <div class="fs-5 fw-bold text-success" id="cada-um">R$ --</div>
+        </div>
+    </div>
+</div>
+
+<div id="resultado-box" class="card p-3 mb-4 text-center" style="border-width: 2px;">
+    <div class="text-muted small mb-1" id="resultado-label">Calculando...</div>
+    <div class="fs-3 fw-bold" id="resultado-valor">--</div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-3">Gastos por Categoria</h6>
+            <canvas id="chartCategorias" height="200"></canvas>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-3">Últimas Despesas do Cartão</h6>
+            <div id="ultimas-despesas"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadDashboard() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    document.getElementById('mes-label').textContent = `${meses[month-1]} ${year}`;
+
+    // Balanço
+    const balRes = await fetch(`/balance/?month=${month}&year=${year}`);
+    const bal = await balRes.json();
+
+    document.getElementById('total-fixas').textContent = `R$ ${bal.total_fixed.toFixed(2)}`;
+    document.getElementById('total-cartao').textContent = `R$ ${bal.total_card.toFixed(2)}`;
+    document.getElementById('total-geral').textContent = `R$ ${bal.total_geral.toFixed(2)}`;
+    document.getElementById('cada-um').textContent = `R$ ${bal.cada_um_paga.toFixed(2)}`;
+
+    const box = document.getElementById('resultado-box');
+    const label = document.getElementById('resultado-label');
+    const valor = document.getElementById('resultado-valor');
+
+    if (bal.result.who === 'thales') {
+        box.style.borderColor = '#dc3545';
+        label.textContent = 'Thales deve para Camila';
+        valor.textContent = `R$ ${bal.result.amount.toFixed(2)}`;
+        valor.className = 'fs-3 fw-bold text-danger';
+    } else if (bal.result.who === 'camila') {
+        box.style.borderColor = '#28a745';
+        label.textContent = 'Camila deve para Thales';
+        valor.textContent = `R$ ${bal.result.amount.toFixed(2)}`;
+        valor.className = 'fs-3 fw-bold text-success';
+    } else {
+        box.style.borderColor = '#6c757d';
+        label.textContent = 'Estão quites!';
+        valor.textContent = 'R$ 0,00';
+        valor.className = 'fs-3 fw-bold text-muted';
+    }
+
+// Resumo mensal cartão
+    const res = await fetch(`/reports/monthly?year=${year}&month=${month}`);
+    const data = await res.json();
+
+    // Busca fixas para incluir no gráfico
+    const fixRes = await fetch(`/fixed/?month=${month}&year=${year}`);
+    const fixData = await fixRes.json();
+
+    // Monta categorias combinadas
+    const cats = {...data.by_category};
+    fixData.items.forEach(f => {
+        cats[f.name] = (cats[f.name] || 0) + f.amount;
+    });
+
+    if (Object.keys(cats).length > 0) {
+        new Chart(document.getElementById('chartCategorias'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(cats),
+                datasets: [{
+                    data: Object.values(cats),
+                    backgroundColor: ['#007bff','#28a745','#ffc107','#dc3545','#17a2b8','#6f42c1','#e83e8c','#fd7e14','#20c997','#6610f2']
+                }]
+            },
+            options: { plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+    // Últimas despesas
+    const html = data.expenses.slice(0, 5).map(e => `
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <div>
+                <div class="fw-semibold">${e.description}</div>
+                <small class="text-muted">${e.category} · ${e.date}</small>
+            </div>
+            <span class="text-danger fw-bold">R$ ${e.amount.toFixed(2)}</span>
+        </div>
+    `).join('') || '<p class="text-muted small">Nenhuma despesa este mês.</p>';
+    document.getElementById('ultimas-despesas').innerHTML = html;
+}
+
+loadDashboard();
+</script>
+{% endblock %}

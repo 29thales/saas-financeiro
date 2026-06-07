@@ -1,0 +1,5 @@
+senha postgresql
+senha postgres123
+
+Ativar venv = cd C:\Users\29Tha\OneDrive\Desktop\saas-financeiro\backend
+venv\Scripts\activate

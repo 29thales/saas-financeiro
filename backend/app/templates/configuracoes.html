@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Configurações - FinanceApp{% endblock %}
+{% block content %}
+<h4 class="fw-bold mb-4">Configurações</h4>
+
+<script>
+async function loadConfig() {
+    const res = await fetch('/settings/');
+    const data = await res.json();
+    if (data.health_plan) {
+        document.getElementById('health-plan').value = parseFloat(data.health_plan).toFixed(2);
+    }
+}
+
+async function salvarConfig() {
+    const value = parseFloat(document.getElementById('health-plan').value);
+    const res = await fetch('/settings/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ health_plan: value })
+    });
+    const data = await res.json();
+    const alertEl = document.getElementById('alert-config');
+    alertEl.textContent = data.message || data.error;
+    alertEl.className = `alert ${res.ok ? 'alert-success' : 'alert-danger'}`;
+    alertEl.classList.remove('d-none');
+    setTimeout(() => alertEl.classList.add('d-none'), 3000);
+}
+
+loadConfig();
+</script>
+{% endblock %}
