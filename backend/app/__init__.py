@@ -27,7 +27,7 @@ def create_app():
         from app.routes.settings import settings_bp
         from app.routes.balance import balance_bp
         from app.routes.card_discounts import discounts_bp
-
+        from app.routes.camila_expenses import camila_bp
 
         app.register_blueprint(auth_bp)
         app.register_blueprint(accounts_bp)
@@ -36,10 +36,11 @@ def create_app():
         app.register_blueprint(splits_bp)
         app.register_blueprint(reports_bp)
         app.register_blueprint(views_bp)
-        app.register_blueprint(admin_bp) 
+        app.register_blueprint(admin_bp)
         app.register_blueprint(fixed_bp)
         app.register_blueprint(settings_bp)
         app.register_blueprint(balance_bp)
         app.register_blueprint(discounts_bp)
+        app.register_blueprint(camila_bp)
 
     return app

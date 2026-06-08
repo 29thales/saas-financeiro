@@ -15,8 +15,8 @@
     </div>
     <div class="col-md-3">
         <div class="card stat-card red p-3">
-            <div class="text-muted small">Cartão Bruto (Camila)</div>
-            <div class="fs-5 fw-bold text-danger" id="total-cartao">R$ --</div>
+            <div class="text-muted small">Total Camila</div>
+            <div class="fs-5 fw-bold text-danger" id="total-camila">R$ --</div>
         </div>
     </div>
     <div class="col-md-3">
@@ -55,9 +55,21 @@
                 <span>(-) Descontos</span>
                 <span class="fw-bold" id="total-descontos">R$ 0,00</span>
             </div>
+            <div id="lista-camila-extras"></div>
+            <div class="mt-2 pt-2 border-top">
+                <div class="text-muted small mb-2">+ Adicionar despesa avulsa</div>
+                <div class="d-flex gap-2 mb-2">
+                    <input type="text" id="camila-desc" class="form-control form-control-sm" placeholder="Descrição">
+                    <input type="number" id="camila-valor" class="form-control form-control-sm" placeholder="Valor" step="0.01" style="width:90px">
+                    <button class="btn btn-sm btn-danger" onclick="adicionarCamilaExtra()">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+                <div id="lista-camila-avulsas"></div>
+            </div>
             <div class="d-flex justify-content-between pt-3 border-top mt-2">
-                <span class="fw-bold">Total líquido</span>
-                <span class="fw-bold text-danger" id="card-liquido">R$ --</span>
+                <span class="fw-bold">Total</span>
+                <span class="fw-bold text-danger" id="camila-total">R$ --</span>
             </div>
         </div>
     </div>
@@ -95,18 +107,23 @@ function getMesAno() {
 
 async function loadBalanco() {
     const { month, year } = getMesAno();
-
     const res = await fetch(`/balance/?month=${month}&year=${year}`);
     const data = await res.json();
 
     document.getElementById('total-fixas').textContent = `R$ ${data.total_fixed.toFixed(2)}`;
     document.getElementById('total-fixas-2').textContent = `R$ ${data.total_fixed.toFixed(2)}`;
-    document.getElementById('total-cartao').textContent = `R$ ${data.total_card.toFixed(2)}`;
     document.getElementById('total-cartao-2').textContent = `R$ ${data.total_card.toFixed(2)}`;
     document.getElementById('total-descontos').textContent = `R$ ${data.total_discounts.toFixed(2)}`;
-    document.getElementById('card-liquido').textContent = `R$ ${data.card_liquido.toFixed(2)}`;
+    document.getElementById('total-camila').textContent = `R$ ${data.camila_total.toFixed(2)}`;
+    document.getElementById('camila-total').textContent = `R$ ${data.camila_total.toFixed(2)}`;
     document.getElementById('total-geral').textContent = `R$ ${data.total_geral.toFixed(2)}`;
     document.getElementById('cada-um').textContent = `R$ ${data.cada_um_paga.toFixed(2)}`;
+
+    document.getElementById('lista-camila-extras').innerHTML = data.total_camila_extras > 0 ? `
+        <div class="d-flex justify-content-between py-2 border-bottom text-danger">
+            <span>(+) Despesas avulsas</span>
+            <span class="fw-bold">R$ ${data.total_camila_extras.toFixed(2)}</span>
+        </div>` : '';
 
     const fixRes = await fetch(`/fixed/?month=${month}&year=${year}`);
     const fixData = await fixRes.json();
@@ -118,6 +135,7 @@ async function loadBalanco() {
     `).join('') || '<p class="text-muted small">Nenhuma despesa fixa.</p>';
 
     await loadDescontos();
+    await loadCamilaExtras();
 
     const box = document.getElementById('resultado-box');
     const label = document.getElementById('resultado-label');
@@ -135,7 +153,7 @@ async function loadBalanco() {
         label.textContent = 'Camila deve para Thales';
         valor.textContent = `R$ ${data.result.amount.toFixed(2)}`;
         valor.className = 'fs-2 fw-bold text-success';
-        calculo.textContent = `Total geral R$${data.total_geral.toFixed(2)} / 2 = R$${data.cada_um_paga.toFixed(2)} cada. Camila pagou R$${data.card_liquido.toFixed(2)}, falta R$${data.result.amount.toFixed(2)}`;
+        calculo.textContent = `Total geral R$${data.total_geral.toFixed(2)} / 2 = R$${data.cada_um_paga.toFixed(2)} cada. Camila pagou R$${data.camila_total.toFixed(2)}, falta R$${data.result.amount.toFixed(2)}`;
     } else {
         box.style.borderColor = '#6c757d';
         label.textContent = 'Estao quites!';
@@ -143,6 +161,48 @@ async function loadBalanco() {
         valor.className = 'fs-2 fw-bold text-muted';
         calculo.textContent = 'Valores iguais este mes';
     }
+}
+
+async function loadCamilaExtras() {
+    const { month, year } = getMesAno();
+    const res = await fetch(`/camila/?month=${month}&year=${year}`);
+    const data = await res.json();
+
+    document.getElementById('lista-camila-avulsas').innerHTML = data.items.length ?
+        data.items.map(i => `
+            <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                <span class="small">${i.description}</span>
+                <div class="d-flex align-items-center gap-1">
+                    <span class="text-danger fw-bold small">R$ ${i.amount.toFixed(2)}</span>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deletarCamilaExtra(${i.id})">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('')
+        : '';
+}
+
+async function adicionarCamilaExtra() {
+    const desc = document.getElementById('camila-desc').value.trim();
+    const valor = parseFloat(document.getElementById('camila-valor').value);
+    const { month, year } = getMesAno();
+    if (!desc || !valor) return alert('Informe descricao e valor!');
+    const res = await fetch('/camila/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ description: desc, amount: valor, month, year })
+    });
+    if (res.ok) {
+        document.getElementById('camila-desc').value = '';
+        document.getElementById('camila-valor').value = '';
+        loadBalanco();
+    }
+}
+
+async function deletarCamilaExtra(id) {
+    await fetch(`/camila/${id}`, { method: 'DELETE' });
+    loadBalanco();
 }
 
 async function loadDescontos() {

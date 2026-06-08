@@ -6,6 +6,7 @@ from app.models.expense import Expense
 from app.models.fixed_expense import FixedExpense
 from app.models.config import Config
 from app.models.card_discount import CardDiscount
+from app.models.camila_expense import CamilaExpense
 
 app = create_app()
 
