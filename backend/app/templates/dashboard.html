@@ -6,32 +6,52 @@
         <h4 class="fw-bold mb-0">Dashboard</h4>
         <small class="text-muted">Bem-vindo, {{ current_user.username }}!</small>
     </div>
-    <span class="badge bg-primary" id="mes-label">--</span>
+    <span class="badge" style="background-color: var(--accent-light); color: var(--accent);" id="mes-label">--</span>
 </div>
 
 <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="card stat-card blue p-3">
-            <div class="text-muted small">Fixas (Thales)</div>
-            <div class="fs-5 fw-bold text-primary" id="total-fixas">R$ --</div>
+        <div class="card p-3">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <div style="width:32px;height:32px;border-radius:9px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-house" style="color: var(--accent);"></i>
+                </div>
+                <div class="text-muted small">Fixas (Thales)</div>
+            </div>
+            <div class="fs-5 fw-bold" id="total-fixas">R$ --</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card stat-card red p-3">
-            <div class="text-muted small">Cartão (Camila)</div>
-            <div class="fs-5 fw-bold text-danger" id="total-cartao">R$ --</div>
+        <div class="card p-3">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <div style="width:32px;height:32px;border-radius:9px;background:#fdeeee;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-credit-card" style="color: #d64545;"></i>
+                </div>
+                <div class="text-muted small">Cartão (Camila)</div>
+            </div>
+            <div class="fs-5 fw-bold" id="total-cartao">R$ --</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card stat-card yellow p-3">
-            <div class="text-muted small">Total Geral</div>
-            <div class="fs-5 fw-bold text-warning" id="total-geral">R$ --</div>
+        <div class="card p-3">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <div style="width:32px;height:32px;border-radius:9px;background:#fdf4e3;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-wallet2" style="color: #e0a90a;"></i>
+                </div>
+                <div class="text-muted small">Total Geral</div>
+            </div>
+            <div class="fs-5 fw-bold" id="total-geral">R$ --</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card stat-card green p-3">
-            <div class="text-muted small">Cada um paga</div>
-            <div class="fs-5 fw-bold text-success" id="cada-um">R$ --</div>
+        <div class="card p-3">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <div style="width:32px;height:32px;border-radius:9px;background:#e8f7ef;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-people" style="color: #1a9e5c;"></i>
+                </div>
+                <div class="text-muted small">Cada um paga</div>
+            </div>
+            <div class="fs-5 fw-bold" id="cada-um">R$ --</div>
         </div>
     </div>
 </div>
@@ -115,7 +135,7 @@ async function loadDashboard() {
                 labels: Object.keys(cats),
                 datasets: [{
                     data: Object.values(cats),
-                    backgroundColor: ['#007bff','#28a745','#ffc107','#dc3545','#17a2b8','#6f42c1','#e83e8c','#fd7e14','#20c997','#6610f2']
+                    backgroundColor: ['#2f5fd8','#28a745','#ffc107','#dc3545','#17a2b8','#6f42c1','#e83e8c','#fd7e14','#20c997','#6610f2']
                 }]
             },
             options: { plugins: { legend: { position: 'bottom' } } }
