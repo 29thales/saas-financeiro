@@ -7,12 +7,20 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; }
+        :root {
+            --accent: #2f5fd8;
+            --accent-light: #eef2fd;
+            --text-main: #1b1f2a;
+            --text-muted: #6b7280;
+            --border-soft: #e8eaf0;
+        }
+        body { background-color: #f4f6fb; color: var(--text-main); }
 
         /* SIDEBAR DESKTOP */
         .sidebar {
             min-height: 100vh;
-            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            background: #ffffff;
+            border-right: 1px solid var(--border-soft);
             width: 250px;
             position: fixed;
             top: 0; left: 0;
@@ -21,23 +29,46 @@
             transition: transform 0.3s ease;
         }
         .sidebar .nav-link {
-            color: #adb5bd;
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin: 2px 10px;
-            transition: all 0.2s;
+            color: var(--text-muted);
+            padding: 10px 16px;
+            border-radius: 10px;
+            margin: 2px 12px;
+            font-size: 0.92rem;
+            font-weight: 500;
+            transition: all 0.15s;
         }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            background-color: #0f3460;
-            color: #fff;
+        .sidebar .nav-link:hover {
+            background-color: #f4f6fb;
+            color: var(--text-main);
+        }
+        .sidebar .nav-link.active {
+            background-color: var(--accent-light);
+            color: var(--accent);
         }
         .sidebar .brand {
-            color: #fff;
-            font-size: 1.3rem;
-            font-weight: bold;
-            padding: 10px 20px 30px;
-            display: block;
+            color: var(--text-main);
+            font-size: 1.15rem;
+            font-weight: 700;
+            padding: 8px 20px 24px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
         }
+        .sidebar .brand .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            color: #fff;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 1rem;
+        }
+        .sidebar hr { border-color: var(--border-soft); }
+        .sidebar .nav-link.text-danger:hover { background-color: #fdeeee; }
+
         .main-content {
             margin-left: 250px;
             padding: 30px;
@@ -46,7 +77,8 @@
         /* TOPBAR MOBILE */
         .topbar {
             display: none;
-            background: linear-gradient(90deg, #1a1a2e 0%, #16213e 100%);
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-soft);
             padding: 12px 16px;
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -55,15 +87,29 @@
             justify-content: space-between;
         }
         .topbar .brand {
-            color: #fff;
-            font-size: 1.1rem;
-            font-weight: bold;
+            color: var(--text-main);
+            font-size: 1.05rem;
+            font-weight: 700;
             text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        .topbar .brand .brand-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            color: #fff;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            font-size: 0.9rem;
         }
         .topbar .btn-menu {
             background: none;
             border: none;
-            color: #fff;
+            color: var(--text-main);
             font-size: 1.5rem;
             cursor: pointer;
         }
@@ -73,16 +119,21 @@
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.4);
             z-index: 150;
         }
 
-        .card { border: none; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .card { border: 1px solid var(--border-soft); border-radius: 14px; box-shadow: 0 1px 3px rgba(16,24,40,0.04); }
         .stat-card { border-left: 4px solid; }
-        .stat-card.green { border-color: #28a745; }
-        .stat-card.red { border-color: #dc3545; }
-        .stat-card.blue { border-color: #007bff; }
-        .stat-card.yellow { border-color: #ffc107; }
+        .stat-card.green { border-color: #1a9e5c; }
+        .stat-card.red { border-color: #d64545; }
+        .stat-card.blue { border-color: var(--accent); }
+        .stat-card.yellow { border-color: #e0a90a; }
+
+        .btn-primary { background-color: var(--accent); border-color: var(--accent); }
+        .btn-primary:hover { background-color: #2450b8; border-color: #2450b8; }
+        .btn-outline-primary { color: var(--accent); border-color: var(--accent); }
+        .btn-outline-primary:hover { background-color: var(--accent); border-color: var(--accent); }
 
         /* MOBILE */
         @media (max-width: 768px) {
@@ -117,7 +168,7 @@
 
     <!-- TOPBAR MOBILE -->
     <div class="topbar">
-        <a class="brand" href="/dashboard"><i class="bi bi-wallet2 me-2"></i>FinanceApp</a>
+        <a class="brand" href="/dashboard"><span class="brand-icon"><i class="bi bi-wallet2"></i></span>FinanceApp</a>
         <button class="btn-menu" onclick="toggleSidebar()">
             <i class="bi bi-list"></i>
         </button>
@@ -128,24 +179,36 @@
 
     <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
-        <a class="brand" href="/dashboard"><i class="bi bi-wallet2 me-2"></i>FinanceApp</a>
+        <a class="brand" href="/dashboard"><span class="brand-icon"><i class="bi bi-wallet2"></i></span>FinanceApp</a>
         <nav class="nav flex-column">
             <a class="nav-link {% if request.path == '/dashboard' %}active{% endif %}" href="/dashboard" onclick="closeSidebar()">
                 <i class="bi bi-speedometer2 me-2"></i>Dashboard
             </a>
+            <a class="nav-link {% if '/contas' in request.path %}active{% endif %}" href="/contas" onclick="closeSidebar()">
+                <i class="bi bi-bank me-2"></i>Contas
+            </a>
             <a class="nav-link {% if '/despesas' in request.path %}active{% endif %}" href="/despesas" onclick="closeSidebar()">
                 <i class="bi bi-receipt me-2"></i>Despesas
             </a>
-            <a class="nav-link {% if '/balanco' in request.path %}active{% endif %}" href="/balanco" onclick="closeSidebar()">
-                <i class="bi bi-calculator me-2"></i>Balanço
+            <a class="nav-link {% if '/gastos-diarios' in request.path %}active{% endif %}" href="/gastos-diarios" onclick="closeSidebar()">
+                <i class="bi bi-cup-hot me-2"></i>Gastos Diários
+            </a>
+            <a class="nav-link {% if '/divisao' in request.path %}active{% endif %}" href="/divisao" onclick="closeSidebar()">
+                <i class="bi bi-people me-2"></i>Divisão
             </a>
             <a class="nav-link {% if '/relatorios' in request.path %}active{% endif %}" href="/relatorios" onclick="closeSidebar()">
                 <i class="bi bi-bar-chart me-2"></i>Relatórios
             </a>
+            <a class="nav-link {% if '/balanco' in request.path %}active{% endif %}" href="/balanco" onclick="closeSidebar()">
+                <i class="bi bi-calculator me-2"></i>Balanço
+            </a>
             <a class="nav-link {% if '/admin' in request.path %}active{% endif %}" href="/admin" onclick="closeSidebar()">
                 <i class="bi bi-shield-lock me-2"></i>Administração
             </a>
-            <hr style="border-color: #444; margin: 10px 20px;">
+            <a class="nav-link {% if '/configuracoes' in request.path %}active{% endif %}" href="/configuracoes" onclick="closeSidebar()">
+                <i class="bi bi-gear me-2"></i>Configurações
+            </a>
+            <hr style="margin: 10px 20px;">
             <a class="nav-link text-danger" href="/auth/logout-page">
                 <i class="bi bi-box-arrow-right me-2"></i>Sair
             </a>
