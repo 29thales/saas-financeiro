@@ -2,22 +2,30 @@
 {% block title %}Divisão - FinanceApp{% endblock %}
 {% block content %}
 <h4 class="fw-bold mb-4">Divisão de Despesas</h4>
-
 <div class="row g-3 mb-4">
     <div class="col-md-4">
-        <div class="card p-3 stat-card yellow">
-            <div class="text-muted small">Me Devem</div>
-            <div class="fs-4 fw-bold text-warning" id="owed-to-me">R$ --</div>
+        <div class="card p-3">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <div style="width:32px;height:32px;border-radius:9px;background:#e8f7ef;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-arrow-down-circle" style="color:#1a9e5c;"></i>
+                </div>
+                <div class="text-muted small">Me Devem</div>
+            </div>
+            <div class="fs-4 fw-bold" id="owed-to-me">R$ --</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card p-3 stat-card red">
-            <div class="text-muted small">Eu Devo</div>
-            <div class="fs-4 fw-bold text-danger" id="i-owe">R$ --</div>
+        <div class="card p-3">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <div style="width:32px;height:32px;border-radius:9px;background:#fdeeee;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-arrow-up-circle" style="color:#d64545;"></i>
+                </div>
+                <div class="text-muted small">Eu Devo</div>
+            </div>
+            <div class="fs-4 fw-bold" id="i-owe">R$ --</div>
         </div>
     </div>
 </div>
-
 <div class="row g-3">
     <div class="col-md-6">
         <div class="card p-3">
@@ -41,15 +49,12 @@
         </div>
     </div>
 </div>
-
 <script>
 async function loadSaldos() {
     const res = await fetch('/splits/balances');
     const bal = await res.json();
-
     document.getElementById('owed-to-me').textContent = `R$ ${bal.total_owed_to_me.toFixed(2)}`;
     document.getElementById('i-owe').textContent = `R$ ${bal.total_i_owe.toFixed(2)}`;
-
     document.getElementById('lista-owed-to-me').innerHTML = bal.owed_to_me.length
         ? bal.owed_to_me.map(s => `
             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
@@ -62,7 +67,6 @@ async function loadSaldos() {
         `).join('')
         : '<p class="text-muted">Ninguém te deve no momento.</p>';
 }
-
 async function loadDespesas() {
     const res = await fetch('/expenses/');
     const despesas = await res.json();
@@ -70,25 +74,20 @@ async function loadDespesas() {
         .map(d => `<option value="${d.id}">${d.description} - R$ ${d.amount.toFixed(2)}</option>`)
         .join('');
 }
-
 async function dividir() {
     const expenseId = document.getElementById('split-despesa').value;
     const users = document.getElementById('split-users').value.split(',').map(u => u.trim()).filter(Boolean);
-
     const res = await fetch(`/splits/${expenseId}`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ participants: users })
     });
     const data = await res.json();
-
     document.getElementById('split-result').innerHTML = res.ok
         ? `<div class="alert alert-success">${data.message} — R$ ${data.amount_per_person.toFixed(2)} cada</div>`
         : `<div class="alert alert-danger">${data.error}</div>`;
-
     if (res.ok) loadSaldos();
 }
-
 loadSaldos();
 loadDespesas();
 </script>
