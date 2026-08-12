@@ -48,7 +48,8 @@
 <script>
 const tipoLabel = { credit: 'Cartão de Crédito', debit: 'Conta Corrente', cash: 'Dinheiro' };
 const tipoIcon  = { credit: 'bi-credit-card', debit: 'bi-bank', cash: 'bi-cash' };
-const tipoColor = { credit: 'text-primary', debit: 'text-success', cash: 'text-warning' };
+const tipoBg    = { credit: 'var(--accent-light)', debit: '#e8f7ef', cash: '#fdf4e3' };
+const tipoColor = { credit: 'var(--accent)', debit: '#1a9e5c', cash: '#e0a90a' };
 
 async function loadContas() {
     const res = await fetch('/accounts/');
@@ -57,10 +58,14 @@ async function loadContas() {
         <div class="col-md-4">
             <div class="card p-3">
                 <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <i class="bi ${tipoIcon[c.type]} fs-2 ${tipoColor[c.type]}"></i>
-                        <h6 class="fw-bold mt-2 mb-0">${c.name}</h6>
-                        <small class="text-muted">${tipoLabel[c.type]}</small>
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width:36px;height:36px;border-radius:10px;background:${tipoBg[c.type]};display:flex;align-items:center;justify-content:center;">
+                            <i class="bi ${tipoIcon[c.type]}" style="color:${tipoColor[c.type]};font-size:1.1rem;"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0">${c.name}</h6>
+                            <small class="text-muted">${tipoLabel[c.type]}</small>
+                        </div>
                     </div>
                     <div class="d-flex gap-1">
                         <button class="btn btn-sm btn-outline-primary" onclick="abrirModalEditar(${c.id}, '${c.name}', '${c.type}', ${c.balance})">
