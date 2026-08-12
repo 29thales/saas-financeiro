@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, send_from_directory, current_app
 from flask_login import login_required, current_user
 views_bp = Blueprint('views', __name__)
 @views_bp.route('/')
@@ -9,6 +9,9 @@ def index():
 @views_bp.route('/login')
 def login_page():
     return render_template('login.html')
+@views_bp.route('/sw.js')
+def service_worker():
+    return send_from_directory(current_app.static_folder, 'sw.js', mimetype='application/javascript')
 @views_bp.route('/dashboard')
 @login_required
 def dashboard():

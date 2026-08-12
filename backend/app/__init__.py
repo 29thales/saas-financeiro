@@ -9,7 +9,7 @@ def create_app():
     app.config.from_object(Config)
     db.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
+    login_manager.login_view = 'views.login_page'
     with app.app_context():
         from app.routes.auth import auth_bp
         from app.routes.accounts import accounts_bp
