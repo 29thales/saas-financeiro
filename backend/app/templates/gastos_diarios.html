@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}Gastos Diários - FinanceApp{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Gastos Diários</h4>
+    <div class="d-flex gap-2">
+        <input type="date" id="filtro-data-inicio" class="form-control" style="width:160px">
+        <input type="date" id="filtro-data-fim" class="form-control" style="width:160px">
+        <button class="btn btn-outline-secondary" onclick="loadLogs()"><i class="bi bi-arrow-clockwise"></i></button>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="text-muted small" id="resumo-logs"></div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-success" onclick="gerarHoje()">
+            <i class="bi bi-lightning-charge me-1"></i>Lançar gastos de hoje
+        </button>
+        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTemplate" onclick="abrirModalNovoTemplate()">
+            <i class="bi bi-plus-lg me-1"></i>Nova Regra
+        </button>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="tabs">
+    <li class="nav-item">
+        <a class="nav-link active" href="#" onclick="switchTab('lancamentos', this)">
+            <i class="bi bi-receipt me-1"></i>Lançamentos
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#" onclick="switchTab('regras', this)">
+            <i class="bi bi-gear me-1"></i>Regras Recorrentes
+        </a>
+    </li>
+</ul>
+
+<!-- ABA LANÇAMENTOS -->
+<div id="tab-lancamentos">
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Categoria</th>
+                        <th>Valor</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-logs"></tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="3" class="text-end fw-bold">Total:</td>
+                        <td class="fw-bold text-danger" id="total-logs"></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ABA REGRAS -->
+<div id="tab-regras" style="display:none">
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Valor padrão</th>
+                        <th>Categoria</th>
+                        <th>Ativa</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-templates"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NOVA/EDITAR REGRA -->
+<div class="modal fade" id="modalTemplate" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalTemplate">Nova Regra Recorrente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="template-id">
+                <div class="mb-3">
+                    <label class="form-label">Nome</label>
+                    <input type="text" class="form-control" id="template-nome" placeholder="Ex: Café, Almoço, Uber">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Valor padrão (R$)</label>
+                    <input type="number" step="0.01" class="form-control" id="template-valor">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Categoria</label>
+                    <input type="text" class="form-control" id="template-categoria" value="Diário">
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="template-ativa" checked>
+                    <label class="form-check-label" for="template-ativa">Ativa (entra no "Lançar gastos de hoje")</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarTemplate()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EDITAR LANÇAMENTO -->
+<div class="modal fade" id="modalLog" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Lançamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="log-id">
+                <div class="mb-3">
+                    <label class="form-label">Data</label>
+                    <input type="date" class="form-control" id="log-data">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Valor (R$)</label>
+                    <input type="number" step="0.01" class="form-control" id="log-valor">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarLog()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const modalTemplate = new bootstrap.Modal(document.getElementById('modalTemplate'));
+const modalLog = new bootstrap.Modal(document.getElementById('modalLog'));
+
+function switchTab(tab, el) {
+    document.querySelectorAll('#tabs .nav-link').forEach(a => a.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-lancamentos').style.display = tab === 'lancamentos' ? '' : 'none';
+    document.getElementById('tab-regras').style.display = tab === 'regras' ? '' : 'none';
+    if (tab === 'regras') loadTemplates();
+}
+
+function formatMoney(v) {
+    return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+// ---------- Lançamentos ----------
+async function loadLogs() {
+    const inicio = document.getElementById('filtro-data-inicio').value;
+    const fim = document.getElementById('filtro-data-fim').value;
+    const params = new URLSearchParams();
+    if (inicio) params.set('start_date', inicio);
+    if (fim) params.set('end_date', fim);
+
+    const res = await fetch('/daily-expenses/?' + params.toString());
+    const data = await res.json();
+
+    const tbody = document.getElementById('tabela-logs');
+    tbody.innerHTML = '';
+    data.items.forEach(item => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${item.date.split('-').reverse().join('/')}</td>
+                <td>${item.name}</td>
+                <td>${item.category}</td>
+                <td>${formatMoney(item.amount)}</td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-outline-secondary" onclick='abrirModalEditarLog(${JSON.stringify(item)})'><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="excluirLog(${item.id})"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>`;
+    });
+    document.getElementById('total-logs').textContent = formatMoney(data.total);
+    document.getElementById('resumo-logs').textContent = `${data.items.length} lançamento(s)`;
+}
+
+async function gerarHoje() {
+    const res = await fetch('/daily-expenses/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Erro ao gerar lançamentos'); return; }
+    alert(data.message);
+    loadLogs();
+}
+
+function abrirModalEditarLog(item) {
+    document.getElementById('log-id').value = item.id;
+    document.getElementById('log-data').value = item.date;
+    document.getElementById('log-valor').value = item.amount;
+    modalLog.show();
+}
+
+async function salvarLog() {
+    const id = document.getElementById('log-id').value;
+    const payload = {
+        date: document.getElementById('log-data').value,
+        amount: parseFloat(document.getElementById('log-valor').value)
+    };
+    await fetch(`/daily-expenses/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    modalLog.hide();
+    loadLogs();
+}
+
+async function excluirLog(id) {
+    if (!confirm('Excluir este lançamento?')) return;
+    await fetch(`/daily-expenses/${id}`, { method: 'DELETE' });
+    loadLogs();
+}
+
+// ---------- Regras (templates) ----------
+async function loadTemplates() {
+    const res = await fetch('/daily-expenses/templates');
+    const items = await res.json();
+
+    const tbody = document.getElementById('tabela-templates');
+    tbody.innerHTML = '';
+    items.forEach(item => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${item.name}</td>
+                <td>${formatMoney(item.amount)}</td>
+                <td>${item.category}</td>
+                <td>${item.active ? '<span class="badge bg-success">Sim</span>' : '<span class="badge bg-secondary">Não</span>'}</td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-outline-secondary" onclick='abrirModalEditarTemplate(${JSON.stringify(item)})'><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="excluirTemplate(${item.id})"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>`;
+    });
+}
+
+function abrirModalNovoTemplate() {
+    document.getElementById('tituloModalTemplate').textContent = 'Nova Regra Recorrente';
+    document.getElementById('template-id').value = '';
+    document.getElementById('template-nome').value = '';
+    document.getElementById('template-valor').value = '';
+    document.getElementById('template-categoria').value = 'Diário';
+    document.getElementById('template-ativa').checked = true;
+}
+
+function abrirModalEditarTemplate(item) {
+    document.getElementById('tituloModalTemplate').textContent = 'Editar Regra';
+    document.getElementById('template-id').value = item.id;
+    document.getElementById('template-nome').value = item.name;
+    document.getElementById('template-valor').value = item.amount;
+    document.getElementById('template-categoria').value = item.category;
+    document.getElementById('template-ativa').checked = item.active;
+    modalTemplate.show();
+}
+
+async function salvarTemplate() {
+    const id = document.getElementById('template-id').value;
+    const payload = {
+        name: document.getElementById('template-nome').value,
+        amount: parseFloat(document.getElementById('template-valor').value),
+        category: document.getElementById('template-categoria').value,
+        active: document.getElementById('template-ativa').checked
+    };
+
+    const url = id ? `/daily-expenses/templates/${id}` : '/daily-expenses/templates';
+    const method = id ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Erro ao salvar regra'); return; }
+
+    modalTemplate.hide();
+    loadTemplates();
+}
+
+async function excluirTemplate(id) {
+    if (!confirm('Excluir esta regra? Os lançamentos já feitos não serão apagados.')) return;
+    await fetch(`/daily-expenses/templates/${id}`, { method: 'DELETE' });
+    loadTemplates();
+}
+
+// ---------- Init ----------
+loadLogs();
+</script>
+{% endblock %}

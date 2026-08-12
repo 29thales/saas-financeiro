@@ -2,18 +2,14 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import Config
-
 db = SQLAlchemy()
 login_manager = LoginManager()
-
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-
     with app.app_context():
         from app.routes.auth import auth_bp
         from app.routes.accounts import accounts_bp
@@ -28,7 +24,7 @@ def create_app():
         from app.routes.balance import balance_bp
         from app.routes.card_discounts import discounts_bp
         from app.routes.camila_expenses import camila_bp
-
+        from app.routes.daily_expenses import daily_bp
         app.register_blueprint(auth_bp)
         app.register_blueprint(accounts_bp)
         app.register_blueprint(expenses_bp)
@@ -42,5 +38,5 @@ def create_app():
         app.register_blueprint(balance_bp)
         app.register_blueprint(discounts_bp)
         app.register_blueprint(camila_bp)
-
+        app.register_blueprint(daily_bp)
     return app
