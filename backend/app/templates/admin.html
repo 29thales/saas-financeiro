@@ -96,7 +96,14 @@ async function loadUsuarios() {
     document.getElementById('tabela-usuarios').innerHTML = users.map(u => `
         <tr>
             <td>${u.id}</td>
-            <td><i class="bi bi-person-circle me-1"></i>${u.username}</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-person-fill" style="color: var(--accent); font-size: 0.85rem;"></i>
+                    </div>
+                    <span>${u.username}</span>
+                </div>
+            </td>
             <td>${u.email}</td>
             <td>${roleLabel[u.role]}</td>
             <td>${u.created_at}</td>
