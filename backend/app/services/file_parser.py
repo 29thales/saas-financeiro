@@ -36,11 +36,17 @@ def parse_csv(file):
 
 
 def _is_valid_amount(text):
-    return bool(re.match(r'^\d{1,3}(?:\.\d{3})*,\d{2}$', text.strip()))
+    # Aceita valores positivos (ex: 50,00) e negativos/devolucoes (ex: 50,00-)
+    return bool(re.match(r'^\d{1,3}(?:\.\d{3})*,\d{2}-?$', text.strip()))
 
 
 def _to_float(text):
-    return float(text.strip().replace('.', '').replace(',', '.'))
+    t = text.strip()
+    negative = t.endswith('-')
+    if negative:
+        t = t[:-1]
+    value = float(t.replace('.', '').replace(',', '.'))
+    return -value if negative else value
 
 
 def parse_pdf_bradesco(file, year=None):
@@ -83,7 +89,7 @@ def parse_pdf_bradesco(file, year=None):
 
                 amounts_by_y = {}
                 for w in amount_col:
-                    if _is_valid_amount(w['text']) and not w['text'].endswith('-'):
+                    if _is_valid_amount(w['text']):
                         y = round(w['top'])
                         amounts_by_y[y] = w['text']
 
@@ -117,7 +123,7 @@ def parse_pdf_bradesco(file, year=None):
                             amount = _to_float(amounts_by_y[search_y])
                             break
 
-                    if amount is None or amount <= 0 or amount > 1500:
+                    if amount is None or amount == 0 or abs(amount) > 1500:
                         continue
 
                     expenses.append({
