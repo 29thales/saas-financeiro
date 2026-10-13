@@ -37,8 +37,9 @@
 <!-- ABA FIXAS -->
 <div id="tab-fixas">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="text-muted small" id="resumo-fixas"></div>
+        <div><div class="text-muted small" id="resumo-fixas"></div><div class="small fw-semibold" id="resumo-selecao-fixas">Nenhum item selecionado</div></div>
         <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-danger d-none" id="btn-deletar-selecionados-fixas" onclick="deletarSelecionadosFixas()"><i class="bi bi-trash me-1"></i>Deletar Selecionados</button>
             <button class="btn btn-sm btn-outline-secondary" onclick="copiarMesAnterior()">
                 <i class="bi bi-copy me-1"></i>Copiar mês anterior
             </button>
@@ -52,6 +53,7 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
+                        <th style="width:40px"><input type="checkbox" id="check-all-fixas" onclick="toggleAllFixas(this)"></th>
                         <th>Descrição</th>
                         <th>Valor</th>
                         <th></th>
@@ -60,6 +62,7 @@
                 <tbody id="tabela-fixas"></tbody>
                 <tfoot class="table-light">
                     <tr>
+                        <td></td>
                         <td class="text-end fw-bold">Total:</td>
                         <td class="fw-bold text-danger" id="total-fixas"></td>
                         <td></td>
@@ -239,7 +242,8 @@ async function loadFixas() {
 
     document.getElementById('tabela-fixas').innerHTML = items.length ? items.map(i => `
         <tr>
-            <td>${i.name}</td>
+                <td><input type="checkbox" class="check-item-fixa" value="${i.id}" data-valor="${i.amount}" onchange="atualizarSelecaoFixas()"></td>
+                <td>${i.name}</td>
             <td class="text-danger fw-bold">R$ ${i.amount.toFixed(2)}</td>
             <td>
                 <div class="d-flex gap-1">
@@ -252,7 +256,9 @@ async function loadFixas() {
                 </div>
             </td>
         </tr>
-    `).join('') : '<tr><td colspan="3" class="text-center text-muted py-3">Nenhuma despesa fixa. Adicione ou copie do mês anterior.</td></tr>';
+    `).join('') : '<tr><td colspan="4" class="text-center text-muted py-3">Nenhuma despesa fixa. Adicione ou copie do mês anterior.</td></tr>';
+    document.getElementById('check-all-fixas').checked = false;
+    atualizarSelecaoFixas();
 }
 
 function abrirModalNovaFixa() {
@@ -285,6 +291,36 @@ async function salvarFixa() {
         bootstrap.Modal.getInstance(document.getElementById('modalFixa')).hide();
         loadFixas();
     }
+}
+
+function toggleAllFixas(master) {
+    document.querySelectorAll('.check-item-fixa').forEach(c => c.checked = master.checked);
+    atualizarSelecaoFixas();
+}
+
+function atualizarSelecaoFixas() {
+    const todos = document.querySelectorAll('.check-item-fixa');
+    const marcados = document.querySelectorAll('.check-item-fixa:checked');
+    let total = 0;
+    marcados.forEach(c => { total += parseFloat(c.dataset.valor); });
+    const resumo = document.getElementById('resumo-selecao-fixas');
+    const btn = document.getElementById('btn-deletar-selecionados-fixas');
+    if (marcados.length === 0) {
+        resumo.textContent = 'Nenhum item selecionado';
+        btn.classList.add('d-none');
+    } else {
+        resumo.textContent = marcados.length + ' item(s) selecionado(s) — R$ ' + total.toFixed(2);
+        btn.classList.remove('d-none');
+    }
+    document.getElementById('check-all-fixas').checked = (todos.length > 0 && marcados.length === todos.length);
+}
+
+async function deletarSelecionadosFixas() {
+    const ids = Array.from(document.querySelectorAll('.check-item-fixa:checked')).map(c => c.value);
+    if (ids.length === 0) return;
+    if (confirm('Deletar ' + ids.length + ' despesa(s) fixa(s) selecionada(s)?') === false) return;
+    await Promise.all(ids.map(id => fetch('/fixed/' + id, { method: 'DELETE' })));
+    loadFixas();
 }
 
 async function deletarFixa(id) {

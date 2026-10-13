@@ -25,6 +25,7 @@ def create_app():
         from app.routes.card_discounts import discounts_bp
         from app.routes.camila_expenses import camila_bp
         from app.routes.daily_expenses import daily_bp
+        from app.routes.settlements import settlements_bp
         app.register_blueprint(auth_bp)
         app.register_blueprint(accounts_bp)
         app.register_blueprint(expenses_bp)
@@ -39,4 +40,5 @@ def create_app():
         app.register_blueprint(discounts_bp)
         app.register_blueprint(camila_bp)
         app.register_blueprint(daily_bp)
+        app.register_blueprint(settlements_bp)
     return app
